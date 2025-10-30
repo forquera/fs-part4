@@ -37,6 +37,28 @@ test.only("identifier is called id", async () => {
   assert(!blog._id, "_id should not exist");
 });
 
+test.only("a valid blog cand be added", async () => {
+  const newBlog = {
+    title: "Esto es un nuevo blog",
+    author: "Messi",
+    url: "holamessi.com",
+    likes: 420,
+  };
+
+  await api
+    .post("/api/blogs")
+    .send(newBlog)
+    .expect(201)
+    .expect("Content-Type", /application\/json/);
+
+  const response = await api.get("/api/blogs");
+
+  const contents = response.body.map((r) => r.title);
+
+  assert.strictEqual(response.body.length, helper.initialBlogs.length + 1);
+  assert(contents.includes(newBlog.title));
+});
+
 after(async () => {
   await mongoose.connection.close();
 });
