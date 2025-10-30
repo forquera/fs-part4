@@ -29,6 +29,14 @@ test.only("all blogs are returned", async () => {
   assert.strictEqual(response.body.length, helper.initialBlogs.length);
 });
 
+test.only("identifier is called id", async () => {
+  const response = await api.get("/api/blogs");
+  const blog = response.body[0];
+
+  assert(blog.id, "id field should exist");
+  assert(!blog._id, "_id should not exist");
+});
+
 after(async () => {
   await mongoose.connection.close();
 });
