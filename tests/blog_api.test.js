@@ -78,6 +78,20 @@ test.only("a blog without like property default to zero", async () => {
   assert.strictEqual(lastBlog.likes, 0);
 });
 
+test.only("add a invalid blog", async () => {
+  const newBlog = {
+    author: "Messi",
+    url: "holamessi.com",
+    likes: 8,
+  };
+
+  await api
+    .post("/api/blogs")
+    .send(newBlog)
+    .expect(400)
+    .expect("Content-Type", /application\/json/);
+});
+
 after(async () => {
   await mongoose.connection.close();
 });
