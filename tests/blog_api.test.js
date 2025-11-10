@@ -1,4 +1,4 @@
-const { test, after, beforeEach } = require("node:test");
+const { test, after, beforeEach, describe } = require("node:test");
 const assert = require("node:assert");
 const mongoose = require("mongoose");
 const supertest = require("supertest");
@@ -16,17 +16,19 @@ beforeEach(async () => {
   await Promise.all(promiseArray);
 });
 
-test.only("blogs are returned as json", async () => {
-  await api
-    .get("/api/blogs")
-    .expect(200)
-    .expect("Content-Type", /application\/json/);
-});
+describe.only("when there is initially some blogs saved", () => {
+  test.only("blogs are returned as json", async () => {
+    await api
+      .get("/api/blogs")
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+  });
 
-test.only("all blogs are returned", async () => {
-  const response = await api.get("/api/blogs");
+  test.only("all blogs are returned", async () => {
+    const response = await api.get("/api/blogs");
 
-  assert.strictEqual(response.body.length, helper.initialBlogs.length);
+    assert.strictEqual(response.body.length, helper.initialBlogs.length);
+  });
 });
 
 test.only("identifier is called id", async () => {
@@ -37,26 +39,68 @@ test.only("identifier is called id", async () => {
   assert(!blog._id, "_id should not exist");
 });
 
-test.only("a valid blog cand be added", async () => {
-  const newBlog = {
-    title: "Esto es un nuevo blog",
-    author: "Messi",
-    url: "holamessi.com",
-    likes: 420,
-  };
+describe.only("viewing a specific blog", () => {
+  test.only("succeeds with a valid id", async () => {
+    const blogsAtStart = await helper.blogsInDb();
+    const blogToView = blogsAtStart[0];
 
-  await api
-    .post("/api/blogs")
-    .send(newBlog)
-    .expect(201)
-    .expect("Content-Type", /application\/json/);
+    const resultBlog = await api
+      .get(`/api/blogs/${blogToView.id}`)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
 
-  const response = await api.get("/api/blogs");
+    assert.deepStrictEqual(resultBlog.body, blogToView);
+  });
 
-  const contents = response.body.map((r) => r.title);
+  test.only("fails with status 404 if blog does not exist", async () => {
+    const validNonExistingId = await helper.nonExistingId();
 
-  assert.strictEqual(response.body.length, helper.initialBlogs.length + 1);
-  assert(contents.includes(newBlog.title));
+    await api.get(`/api/blogs/${validNonExistingId}`).expect(404);
+  });
+
+  test.only("fails with statuscode 400 id is invalid", async () => {
+    const invalidId = "5a3d5da59070081a82a3445";
+
+    await api.get(`/api/blogs/${invalidId}`).expect(400);
+  });
+});
+
+describe.only("addition of a new note", () => {
+  test.only("a valid blog cand be added", async () => {
+    const newBlog = {
+      title: "Esto es un nuevo blog",
+      author: "Messi",
+      url: "holamessi.com",
+      likes: 420,
+    };
+
+    await api
+      .post("/api/blogs")
+      .send(newBlog)
+      .expect(201)
+      .expect("Content-Type", /application\/json/);
+
+    const response = await api.get("/api/blogs");
+
+    const contents = response.body.map((r) => r.title);
+
+    assert.strictEqual(response.body.length, helper.initialBlogs.length + 1);
+    assert(contents.includes(newBlog.title));
+  });
+
+  test.only("add a invalid blog", async () => {
+    const newBlog = {
+      author: "Messi",
+      url: "holamessi.com",
+      likes: 8,
+    };
+
+    await api
+      .post("/api/blogs")
+      .send(newBlog)
+      .expect(400)
+      .expect("Content-Type", /application\/json/);
+  });
 });
 
 test.only("a blog without like property default to zero", async () => {
@@ -76,20 +120,6 @@ test.only("a blog without like property default to zero", async () => {
   const lastBlog = response.body.at(-1);
 
   assert.strictEqual(lastBlog.likes, 0);
-});
-
-test.only("add a invalid blog", async () => {
-  const newBlog = {
-    author: "Messi",
-    url: "holamessi.com",
-    likes: 8,
-  };
-
-  await api
-    .post("/api/blogs")
-    .send(newBlog)
-    .expect(400)
-    .expect("Content-Type", /application\/json/);
 });
 
 after(async () => {

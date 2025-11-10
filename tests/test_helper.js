@@ -16,7 +16,12 @@ const initialBlogs = [
 ];
 
 const nonExistingId = async () => {
-  const note = new Blog({ title: "willremovethissoon" });
+  const note = new Blog({
+    title: "Esto se borrara",
+    author: "Scream",
+    url: "holamscream.com",
+    likes: 69,
+  });
   await note.save();
   await note.deleteOne();
 
