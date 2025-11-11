@@ -103,6 +103,53 @@ describe.only("addition of a new note", () => {
   });
 });
 
+describe.only("updating a existing blog", () => {
+  test.only("updating a blog successfully", async () => {
+    const blogsAtStart = await helper.blogsInDb();
+    const blogToUpdate = blogsAtStart[0];
+
+    const updatedBlog = {
+      ...blogToUpdate,
+      author: "Eddie Vedder",
+      likes: blogToUpdate.likes + 5,
+    };
+
+    const result = await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send(updatedBlog)
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
+    assert.deepStrictEqual(result.body, updatedBlog);
+  });
+
+  test.only("returns 404 if blog to update does not exist", async () => {
+    const nonExistingId = await helper.nonExistingId();
+
+    const updateData = {
+      title: "Esto es para prueba",
+      author: "Scream",
+      url: "holamscream.com",
+      likes: 3,
+    };
+
+    await api.put(`/api/blogs/${nonExistingId}`).send(updateData).expect(404);
+  });
+
+  test.only("returns 400 if id is invalid", async () => {
+    const invalidId = "5a3d5da59070081a82a3445";
+
+    const updateData = {
+      title: "Esto es para prueba",
+      author: "Scream",
+      url: "holamscream.com",
+      likes: 3,
+    };
+
+    await api.put(`/api/blogs/${invalidId}`).send(updateData).expect(400);
+  });
+});
+
 test.only("a blog without like property default to zero", async () => {
   const newBlog = {
     title: "Esto es un nuevo blog",
