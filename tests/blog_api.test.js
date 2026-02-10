@@ -5,11 +5,18 @@ const supertest = require("supertest");
 const app = require("../app");
 const helper = require("./test_helper");
 const Blog = require("../models/blog");
+const User = require("../models/user");
+const bcrypt = require("bcrypt");
 
 const api = supertest(app);
 
 beforeEach(async () => {
   await Blog.deleteMany({});
+  await User.deleteMany({});
+
+  const passwordHash = await bcrypt.hash("Elixir99", 10);
+  const user = new User({ username: "elixir", name: "Elixir", passwordHash });
+  await user.save();
 
   const blogObjects = helper.initialBlogs.map((blog) => new Blog(blog));
   const promiseArray = blogObjects.map((blog) => blog.save());
@@ -65,8 +72,10 @@ describe.only("viewing a specific blog", () => {
   });
 });
 
-describe.only("addition of a new note", () => {
+describe.only("addition of a new blog", () => {
   test.only("a valid blog cand be added", async () => {
+    const token = await helper.loginAndGetToken();
+
     const newBlog = {
       title: "Esto es un nuevo blog",
       author: "Messi",
@@ -76,6 +85,7 @@ describe.only("addition of a new note", () => {
 
     await api
       .post("/api/blogs")
+      .set("Authorization", `Bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect("Content-Type", /application\/json/);
@@ -89,6 +99,8 @@ describe.only("addition of a new note", () => {
   });
 
   test.only("add a invalid blog", async () => {
+    const token = await helper.loginAndGetToken();
+
     const newBlog = {
       author: "Messi",
       url: "holamessi.com",
@@ -97,6 +109,7 @@ describe.only("addition of a new note", () => {
 
     await api
       .post("/api/blogs")
+      .set("Authorization", `Bearer ${token}`)
       .send(newBlog)
       .expect(400)
       .expect("Content-Type", /application\/json/);
@@ -148,9 +161,23 @@ describe.only("updating a existing blog", () => {
 
     await api.put(`/api/blogs/${invalidId}`).send(updateData).expect(400);
   });
+
+  test.only("adding a blog fails with 401 if token is not provided", async () => {
+    const newBlog = {
+      title: "Blog sin token",
+      author: "Anon",
+      url: "notoken.com",
+      likes: 1,
+    };
+
+    const res = await api.post("/api/blogs").send(newBlog).expect(401);
+    assert(res.body.error);
+  });
 });
 
 test.only("a blog without like property default to zero", async () => {
+  const token = await helper.loginAndGetToken();
+
   const newBlog = {
     title: "Esto es un nuevo blog",
     author: "Messi",
@@ -159,6 +186,7 @@ test.only("a blog without like property default to zero", async () => {
 
   await api
     .post("/api/blogs")
+    .set("Authorization", `Bearer ${token}`)
     .send(newBlog)
     .expect(201)
     .expect("Content-Type", /application\/json/);

@@ -1,6 +1,20 @@
 const Blog = require("../models/blog");
 const User = require("../models/user");
 
+const supertest = require("supertest");
+const app = require("../app");
+
+const api = supertest(app);
+
+const loginAndGetToken = async () => {
+  const login = await api
+    .post("/api/login")
+    .send({ username: "elixir", password: "Elixir99" })
+    .expect(200);
+
+  return login.body.token;
+};
+
 const initialBlogs = [
   {
     title: "Esto es una prueba",
@@ -44,4 +58,5 @@ module.exports = {
   nonExistingId,
   blogsInDb,
   usersInDb,
+  loginAndGetToken,
 };

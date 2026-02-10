@@ -1,7 +1,6 @@
 const blogsRouter = require("express").Router();
-const jwt = require("jsonwebtoken");
 const Blog = require("../models/blog");
-const User = require("../models/user");
+const middleware = require("../utils/middleware");
 
 blogsRouter.get("", async (request, response) => {
   const blogs = await Blog.find({}).populate("user");
@@ -9,7 +8,7 @@ blogsRouter.get("", async (request, response) => {
   response.json(blogs);
 });
 
-blogsRouter.post("", async (request, response) => {
+blogsRouter.post("", middleware.userExtractor, async (request, response) => {
   const body = request.body;
   const user = request.user;
 
@@ -59,21 +58,25 @@ blogsRouter.put("/:id", async (request, response) => {
   }
 });
 
-blogsRouter.delete("/:id", async (request, response) => {
-  const blogId = request.params.id;
+blogsRouter.delete(
+  "/:id",
+  middleware.userExtractor,
+  async (request, response) => {
+    const blogId = request.params.id;
 
-  const user = request.user;
-  const blog = await Blog.findById(blogId);
+    const user = request.user;
+    const blog = await Blog.findById(blogId);
 
-  if (blog.user.toString() === user._id.toString()) {
-    await Blog.findByIdAndDelete(blogId);
+    if (blog.user.toString() === user._id.toString()) {
+      await Blog.findByIdAndDelete(blogId);
 
-    return response.status(204).end();
-  } else {
-    return response
-      .status(403)
-      .json({ error: "only the creator can delete this blog" });
-  }
-});
+      return response.status(204).end();
+    } else {
+      return response
+        .status(403)
+        .json({ error: "only the creator can delete this blog" });
+    }
+  },
+);
 
 module.exports = blogsRouter;
